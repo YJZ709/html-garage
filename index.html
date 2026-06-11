@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂点名器 · Excel导入版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a4d3a 0%, #0d2e20 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.3);
+        }
+
+        /* 点名大屏幕区域 */
+        .roll-section {
+            background: linear-gradient(145deg, #fef9e6, #fdf3df);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #e8dcc8;
+        }
+
+        .name-screen {
+            background: white;
+            border-radius: 80px;
+            padding: 45px 20px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05), 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        #currentName {
+            font-size: 3.2rem;
+            font-weight: 800;
+            color: #1a4d3a;
+            letter-spacing: 2px;
+            word-break: break-word;
+            transition: 0.1s ease;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            padding: 14px 32px;
+            border-radius: 60px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s linear;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary {
+            background: #f4a261;
+            color: white;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.96);
+            background: #e76f51;
+        }
+
+        .btn-secondary {
+            background: #2d6a4f;
+            color: white;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.96);
+        }
+
+        .btn-outline {
+            background: #e9ecef;
+            color: #2d6a4f;
+        }
+
+        /* 名单管理区域 */
+        .manage-section {
+            padding: 25px 30px 30px;
+            background: #ffffff;
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .section-title h2 {
+            font-size: 1.4rem;
+            color: #1a4d3a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .count-badge {
+            background: #2d6a4f;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* Excel导入区域 - 高亮 */
+        .excel-import-area {
+            background: #e8f5e9;
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px dashed #2d6a4f;
+        }
+
+        .excel-import-area h3 {
+            color: #1a4d3a;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .import-hint {
+            background: #fff3cd;
+            padding: 10px 15px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            color: #856404;
+        }
+
+        .excel-paste-box {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #2d6a4f;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            background: white;
+            outline: none;
+        }
+
+        .excel-paste-box:focus {
+            border-color: #f4a261;
+            box-shadow: 0 0 0 3px rgba(244,162,97,0.2);
+        }
+
+        .import-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .small-btn {
+            padding: 10px 20px;
+            border-radius: 40px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: #2d6a4f;
+            color: white;
+        }
+
+        .small-btn-outline {
+            background: white;
+            border: 2px solid #2d6a4f;
+            color: #2d6a4f;
+        }
+
+        /* 学生列表展示 */
+        .student-list-container {
+            background: #f8f9fa;
+            border-radius: 24px;
+            padding: 15px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .student-tag {
+            display: inline-block;
+            background: white;
+            padding: 8px 18px;
+            margin: 6px;
+            border-radius: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 0.95rem;
+            transition: 0.05s;
+        }
+
+        .student-tag .delete-icon {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #e76f51;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .student-tag .delete-icon:hover {
+            color: #c0392b;
+        }
+
+        .empty-tip {
+            text-align: center;
+            color: #adb5bd;
+            padding: 30px;
+        }
+
+        footer {
+            background: #f8f4ea;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #8b7a5a;
+        }
+
+        @media (max-width: 600px) {
+            #currentName { font-size: 2rem; }
+            .btn { padding: 10px 20px; font-size: 0.9rem; }
+        }
+
+        .pop-animation {
+            animation: pop 0.2s cubic-bezier(0.2, 1.3, 0.4, 1);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 0.8; }
+            70% { transform: scale(1.08); color: #e76f51; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <!-- 点名区域 -->
+        <div class="roll-section">
+            <div class="name-screen">
+                <div id="currentName">✨ 准备点名 ✨</div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="rollBtn">🎲 随机点名</button>
+                <button class="btn btn-secondary" id="resetDefaultBtn">📚 恢复示例</button>
+                <button class="btn btn-outline" id="clearAllBtn">🗑️ 清空名单</button>
+            </div>
+        </div>
+
+        <!-- 名单管理区域 -->
+        <div class="manage-section">
+            <div class="section-title">
+                <h2>
+                    <span>📋</span> 学员花名册
+                </h2>
+                <div class="count-badge" id="countBadge">0人</div>
+            </div>
+
+            <!-- Excel 导入专区 -->
+            <div class="excel-import-area">
+                <h3>📊 从 Excel 导入名单</h3>
+                <div class="import-hint">
+                    💡 <strong>使用步骤：</strong><br>
+                    1️⃣ 在 Excel 中选中姓名列（一列，不要表头）→ 按 <kbd>Ctrl+C</kbd> 复制<br>
+                    2️⃣ 点击下方文本框，按 <kbd>Ctrl+V</kbd> 粘贴<br>
+                    3️⃣ 点击「追加导入」或「替换名单」即可！
+                </div>
+                <textarea id="excelPasteArea" class="excel-paste-box" rows="4" placeholder="在这里粘贴从 Excel 复制的姓名&#10;（每行一个学生姓名）"></textarea>
+                <div class="import-buttons">
+                    <button class="small-btn" id="appendFromExcelBtn">➕ 追加到现有名单</button>
+                    <button class="small-btn small-btn-outline" id="replaceFromExcelBtn">🔄 替换整个名单</button>
+                </div>
+            </div>
+
+            <!-- 当前名单展示 -->
+            <div id="studentList" class="student-list-container">
+                <div class="empty-tip">暂无学生，请从 Excel 导入或恢复示例</div>
+            </div>
+            <div style="font-size: 0.7rem; margin-top: 12px; text-align: center; color: #9e9e9e;">
+                ✨ 点击姓名旁的「✖」可删除单个学生
+            </div>
+        </div>
+        <footer>
+            🎓 课堂点名神器 | 支持 Excel 直接粘贴导入
+        </footer>
+    </div>
+</div>
+
+<script>
+    // ==================== 默认示例数据 ====================
+    const DEFAULT_STUDENTS = ["欧阳若曦", "林清瑶", "苏小冉", "陆明远", "唐秋怡", "周子衡", "吴青璇"];
+
+    // 当前学生列表
+    let studentsList = [...DEFAULT_STUDENTS];
+
+    // DOM 元素
+    const rollBtn = document.getElementById('rollBtn');
+    const resetDefaultBtn = document.getElementById('resetDefaultBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const appendFromExcelBtn = document.getElementById('appendFromExcelBtn');
+    const replaceFromExcelBtn = document.getElementById('replaceFromExcelBtn');
+    const currentNameSpan = document.getElementById('currentName');
+    const studentListDiv = document.getElementById('studentList');
+    const countBadge = document.getElementById('countBadge');
+    const excelPasteArea = document.getElementById('excelPasteArea');
+
+    // 存储 KEY
+    const STORAGE_KEY = 'excel_rollcall_students';
+
+    // 保存到本地存储
+    function saveToLocal() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(studentsList));
+    }
+
+    // 从本地加载
+    function loadFromLocal() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    studentsList = parsed;
+                } else {
+                    studentsList = [...DEFAULT_STUDENTS];
+                }
+            } catch(e) {
+                studentsList = [...DEFAULT_STUDENTS];
+            }
+        } else {
+            studentsList = [...DEFAULT_STUDENTS];
+        }
+        renderStudentList();
+        updateCountDisplay();
+    }
+
+    // 更新人数显示
+    function updateCountDisplay() {
+        const len = studentsList.length;
+        countBadge.innerText = len + '人';
+        if (len === 0 && currentNameSpan.innerText !== '⚠️ 名单为空') {
+            currentNameSpan.innerText = '⚠️ 名单为空';
+        }
+    }
+
+    // 防XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 渲染学生列表（带删除按钮）
+    function renderStudentList() {
+        if (!studentListDiv) return;
+        if (studentsList.length === 0) {
+            studentListDiv.innerHTML = '<div class="empty-tip">📭 暂无学生，请从 Excel 导入或恢复示例</div>';
+            return;
+        }
+
+        let html = '';
+        studentsList.forEach((name, idx) => {
+            html += `
+                <div class="student-tag">
+                    ${escapeHtml(name)}
+                    <span class="delete-icon" data-index="${idx}">✖</span>
+                </div>
+            `;
+        });
+        studentListDiv.innerHTML = html;
+
+        // 绑定删除事件
+        document.querySelectorAll('.delete-icon').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const idx = parseInt(el.getAttribute('data-index'), 10);
+                if (!isNaN(idx) && idx >= 0 && idx < studentsList.length) {
+                    studentsList.splice(idx, 1);
+                    renderStudentList();
+                    updateCountDisplay();
+                    saveToLocal();
+                    // 如果当前显示的名字正好被删除，重置点名显示
+                    const currentName = currentNameSpan.innerText;
+                    if (!studentsList.includes(currentName) && 
+                        currentName !== '✨ 准备点名 ✨' && 
+                        currentName !== '⚠️ 名单为空' &&
+                        currentName !== '✨ 名单已更新 ✨') {
+                        currentNameSpan.innerText = '✨ 点名就绪 ✨';
+                    }
+                }
+            });
+        });
+    }
+
+    // 从文本框解析姓名（支持Excel粘贴，按行分割，过滤空行）
+    function parsePastedNames() {
+        let rawText = excelPasteArea.value;
+        // 按换行分割
+        let lines = rawText.split(/\r?\n/);
+        // 过滤空行和纯空格，并去除首尾空格
+        let names = lines.filter(line => line.trim().length > 0).map(line => line.trim());
+        return names;
+    }
+
+    // 追加导入（不清空原有名单）
+    function appendFromExcel() {
+        let newNames = parsePastedNames();
+        if (newNames.length === 0) {
+            alert('❌ 粘贴区没有有效姓名！请先在 Excel 复制姓名列，然后粘贴进来。');
+            return;
+        }
+        
+        let addedCount = 0;
+        for (let name of newNames) {
+            // 允许同名，但避免过多提示，直接添加
+            studentsList.push(name);
+            addedCount++;
+        }
+        
+        renderStudentList();
+        updateCountDisplay();
+        saveToLocal();
+        excelPasteArea.value = '';  // 清空粘贴区
+        alert(`✅ 成功导入 ${addedCount} 名学生！当前共 ${studentsList.length} 人`);
+        rollStatusHint(`📥 已追加 ${addedCount} 人`);
+    }
+
+    // 替换整个名单
+    function replaceFromExcel() {
+        let newNames = parsePastedNames();
+        if (newNames.length === 0) {
+            alert('❌ 粘贴区没有有效姓名！请先在 Excel 复制姓名列，然后粘贴进来。');
+            return;
+        }
+        
+        if (confirm(`⚠️ 替换操作将清空当前 ${studentsList.length} 人，替换为 ${newNames.length} 人，确定吗？`)) {
+            studentsList = [...newNames];
+            renderStudentList();
+            updateCountDisplay();
+            saveToLocal();
+            excelPasteArea.value = '';
+            currentNameSpan.innerText = '✨ 名单已更新 ✨';
+            alert(`✅ 已替换为 ${studentsList.length} 人的新名单`);
+            rollStatusHint(`🔄 名单已替换，共 ${studentsList.length} 人`);
+        }
+    }
+
+    // 小提示（更新点名器状态栏风格，虽然没有独立状态栏，修改点名屏下方样式？这里为了友好，简单弹个短暂样式）
+    function rollStatusHint(msg) {
+        const originalText = currentNameSpan.innerText;
+        currentNameSpan.innerText = msg;
+        setTimeout(() => {
+            if (studentsList.length > 0 && currentNameSpan.innerText === msg) {
+                currentNameSpan.innerText = originalText !== '⚠️ 名单为空' && originalText !== '✨ 准备点名 ✨' ? originalText : '✨ 点名就绪 ✨';
+            }
+        }, 1500);
+    }
+
+    // 随机点名
+    function rollCall() {
+        if (studentsList.length === 0) {
+            currentNameSpan.innerText = '❌ 没有学生！';
+            alert('请先导入学生名单（使用 Excel 导入或恢复示例）');
+            return;
+        }
+        const randomIndex = Math.floor(Math.random() * studentsList.length);
+        const pickedName = studentsList[randomIndex];
+        currentNameSpan.innerText = pickedName;
+        // 添加弹跳动画
+        currentNameSpan.classList.add('pop-animation');
+        setTimeout(() => {
+            currentNameSpan.classList.remove('pop-animation');
+        }, 280);
+        
+        // 可选项: 让点名有语音感（可选不处理）
+    }
+
+    // 恢复默认示例班级
+    function resetDefault() {
+        if (confirm('恢复示例班级会覆盖当前名单，确定吗？')) {
+            studentsList = [...DEFAULT_STUDENTS];
+            renderStudentList();
+            updateCountDisplay();
+            saveToLocal();
+            currentNameSpan.innerText = '🏫 示例班级已加载';
+            setTimeout(() => {
+                if (studentsList.length) currentNameSpan.innerText = '✨ 点名就绪 ✨';
+            }, 1500);
+        }
+    }
+
+    // 清空所有
+    function clearAll() {
+        if (studentsList.length === 0) return;
+        if (confirm('⚠️ 确定要清空全部学生吗？清空后无法恢复！')) {
+            studentsList = [];
+            renderStudentList();
+            updateCountDisplay();
+            saveToLocal();
+            currentNameSpan.innerText = '📭 名单已清空';
+        }
+    }
+
+    // 绑定事件
+    rollBtn.addEventListener('click', rollCall);
+    resetDefaultBtn.addEventListener('click', resetDefault);
+    clearAllBtn.addEventListener('click', clearAll);
+    appendFromExcelBtn.addEventListener('click', appendFromExcel);
+    replaceFromExcelBtn.addEventListener('click', replaceFromExcel);
+
+    // 可选：让文本框支持快捷键提示
+    excelPasteArea.addEventListener('paste', function(e) {
+        // 只是提示，不需要额外动作
+        setTimeout(() => {
+            // 可选显示行数
+            let lines = parsePastedNames().length;
+            if (lines > 0) {
+                rollStatusHint(`📋 检测到 ${lines} 个姓名，可点击导入`);
+            }
+        }, 50);
+    });
+
+    // 初始化
+    loadFromLocal();
+</script>
+</body>
+</html>
